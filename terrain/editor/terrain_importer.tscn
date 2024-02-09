@@ -1,0 +1,84 @@
+[gd_scene load_steps=2 format=3 uid="uid://x83dvkic0aqa"]
+
+[ext_resource type="Texture2D" uid="uid://cdq3km7f6w18d" path="res://addons/mono_landscape/icons/DirAccess.svg" id="1_6kt7y"]
+
+[node name="TerrainImportDialog" type="ConfirmationDialog"]
+title = "Import Terrain"
+initial_position = 2
+size = Vector2i(200, 281)
+visible = true
+ok_button_text = "Import"
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 196.0
+offset_bottom = 239.0
+theme_override_constants/margin_left = 7
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 7
+theme_override_constants/margin_bottom = 6
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="PatchSizeLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Patch Size:"
+
+[node name="PatchSizeField" type="SpinBox" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+min_value = 16.0
+value = 16.0
+exp_edit = true
+
+[node name="LodsLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "LODs:"
+
+[node name="LodsField" type="SpinBox" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+min_value = 1.0
+value = 6.0
+
+[node name="RegionInfo" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Current Region Size: 512"
+
+[node name="Dir" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="MarginContainer/VBoxContainer/Dir"]
+layout_mode = 2
+icon = ExtResource("1_6kt7y")
+
+[node name="LineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/Dir"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Data Save Dir"
+
+[node name="Image" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="MarginContainer/VBoxContainer/Image"]
+layout_mode = 2
+icon = ExtResource("1_6kt7y")
+
+[node name="LineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/Image"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Import Heightmap"
+
+[node name="DirDialog" type="FileDialog" parent="."]
+title = "Open a Directory"
+initial_position = 2
+size = Vector2i(364, 300)
+ok_button_text = "选择当前文件夹"
+file_mode = 2
+
+[node name="FileDialog" type="FileDialog" parent="."]
+title = "Open a File"
+initial_position = 2
+size = Vector2i(364, 300)
+ok_button_text = "打开"
+file_mode = 0

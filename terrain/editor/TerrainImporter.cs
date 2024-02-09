@@ -7,6 +7,8 @@ namespace MonoLandscape.Terrain.Editor;
 [Tool]
 public partial class TerrainImporter : Button
 {
+    public MonoTerrain Terrain { get; set; }
+    
     private ConfirmationDialog _importWindow;
     private SpinBox _patchSize;
     private SpinBox _lods;
@@ -22,7 +24,7 @@ public partial class TerrainImporter : Button
         Icon = GD.Load<Texture2D>("res://addons/mono_landscape/icons/Terrain.svg");
         Pressed += () => _importWindow?.Popup();
 
-        _importWindow = GD.Load<PackedScene>("res://addons/mono_landscape/terrain/editor/terrain_import_dialog.tscn")
+        _importWindow = GD.Load<PackedScene>("res://addons/mono_landscape/terrain/editor/terrain_importer.tscn")
             .Instantiate<ConfirmationDialog>();
         _importWindow.Visible = false;
         _importWindow.Confirmed += Import;
@@ -61,11 +63,11 @@ public partial class TerrainImporter : Button
             return;
         }
 
-        var terrainData = new MonoTerrainData
+        var terrainData = new MonoTerrainData()
         {
-            MapDirectory = _terrainDataPath.Text,
             PatchSize = (int)_patchSize.Value,
             Lods = (int)_lods.Value,
+            MapDirectory = _terrainDataPath.Text,
             Regions = new Array<Vector2I>()
         };
         var heightmap = GD.Load<Image>(_heightmapPath.Text);
@@ -93,18 +95,20 @@ public partial class TerrainImporter : Button
                     ResourceSaver.Singleton.Save(tile, $"{_terrainDataPath.Text}/lod_{i}/tile_{x}_{y}.res");
                 }
             }
-
-            regionSize >>= 1;
         }
+        
+        if (Terrain != null)
+            Terrain.TerrainData = terrainData;
     }
 
     private Image CreateTile(in int lod, in int x, in int y, in int regionSize, in Image heightmap)
     {
         var pixelGap = 1 << lod;
-        var tile = Image.Create(regionSize + 1, regionSize + 1, false, Image.Format.Rf);
-        for (int i = 0; i < regionSize + 1; i ++)
+        var sizeCurrentLod = regionSize >> lod;
+        var tile = Image.Create(sizeCurrentLod + 1, sizeCurrentLod + 1, false, Image.Format.Rf);
+        for (int i = 0; i < sizeCurrentLod + 1; i ++)
         {
-            for (int j = 0; j < regionSize + 1; j++)
+            for (int j = 0; j < sizeCurrentLod + 1; j++)
             {
                 var color = heightmap.GetPixel(x * regionSize + i * pixelGap, y * regionSize + j * pixelGap);
                 tile.SetPixel(i, j, color);
