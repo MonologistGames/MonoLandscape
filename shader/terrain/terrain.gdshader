@@ -26,5 +26,6 @@ void fragment()
 {
 	//ALBEDO = vec3(region_size);
 	float c = texture(heightmap, fract(pos.xz/(region_size))).r;
-	ALBEDO = colors[lod-1] * c;
+	ALBEDO = colors[lod] * c / 2.0;
+	//ALBEDO = vec3(c / 5.0);
 }
