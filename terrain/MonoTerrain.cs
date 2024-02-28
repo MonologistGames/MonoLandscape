@@ -22,7 +22,7 @@ public partial class MonoTerrain : Node3D
             get => _heightmapData;
             set
             {
-                _heightmapData = value; 
+                _heightmapData = value;
                 Heightmap.SetImage(_heightmapData);
             }
         }
@@ -45,12 +45,14 @@ public partial class MonoTerrain : Node3D
     private StringName _maxHeightParam = "max_height";
 
     private ObjectPool<RegionMaterial>? _regionMaterialPool;
+
     // TODO: Use dictionary to replace this array
     private RegionMaterial?[] _regionContainers = null!;
-    
+
     private Rid _patchMesh;
     private Aabb _patchAabb;
     private readonly List<Rid> _patchInstances = [];
+    private Image? _lodMap;
     [Export] public Camera3D? RenderCamera { get; set; }
 
     [Export]
@@ -99,7 +101,6 @@ public partial class MonoTerrain : Node3D
             }
         };
 
-        GD.Print("MonoTerrain _EnterTree");
         Initialize();
         _initialized = true;
     }
@@ -151,6 +152,9 @@ public partial class MonoTerrain : Node3D
                 return regionData;
             },
             regionData => { regionData.Lod = int.MaxValue; });
+
+        var tile = (1 << (TerrainData.Lods - 1)) * visibleRange;
+        _lodMap = Image.Create(tile, tile, false, Image.Format.R8);
     }
 
     private void ClearUp()
@@ -230,19 +234,30 @@ public partial class MonoTerrain : Node3D
                 RS.Singleton.InstanceSetLayerMask(patch, RenderLayers);
                 _patchInstances.Add(patch);
             }
-            
+
             var aabb = _patchAabb;
-            aabb.Position = new Vector3(-patchSize * 0.5f,range.X * TerrainData.HeightScale, -patchSize * 0.5f);
-            aabb.End = new Vector3(patchSize * 0.5f,range.Y * TerrainData.HeightScale, patchSize * 0.5f);
+            aabb.Position = new Vector3(-patchSize * 0.5f, range.X * TerrainData.HeightScale, -patchSize * 0.5f);
+            aabb.End = new Vector3(patchSize * 0.5f, range.Y * TerrainData.HeightScale, patchSize * 0.5f);
             RS.Singleton.InstanceSetCustomAabb(patch, aabb);
             var transform = Transform3D.Identity.Scaled(new Vector3(patchScale, 1, patchScale));
             transform.Origin = position;
             RS.Singleton.InstanceSetTransform(patch, transform);
             RS.Singleton.InstanceGeometrySetMaterialOverride(patch, region.Material.GetRid());
             RS.Singleton.InstanceGeometrySetShaderParameter(patch, "lod", depth);
-            
+
             if (maxDepth > depth)
                 maxDepth = depth;
+            
+            var tile = Mathf.FloorToInt(patchSize / TerrainData.PatchSize * 0.5f);
+            
+            for (var x = 0; x < tile; x++)
+            {
+                for (var y = 0; y < tile; y++)
+                {
+                    _lodMap!.SetPixel(x + (int) position.X / TerrainData.PatchSize, y + (int) position.Z / TerrainData.PatchSize,
+                        Color.Color8((byte)depth,0, 0, 0));
+                }
+            }
             return;
         }
 
@@ -254,5 +269,4 @@ public partial class MonoTerrain : Node3D
             BuildQuadtree(region, range, depth - 1, pos, viewPoint, scenario, ref patchCount, ref maxDepth);
         }
     }
-    
 }
