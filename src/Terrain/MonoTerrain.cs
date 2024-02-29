@@ -113,11 +113,9 @@ public partial class MonoTerrain : Node3D
 
     public override void _Ready()
     {
-        /*
         RenderCamera = Engine.IsEditorHint()
             ? EditorInterface.Singleton.GetEditorViewport3D().GetCamera3D()
             : GetViewport().GetCamera3D();
-            */
         _world = GetWorld3D();
     }
 
@@ -219,7 +217,7 @@ public partial class MonoTerrain : Node3D
         var viewPos = (viewPoint / patchSize).Floor();
         var snappedPos = (position / patchSize).Floor();
 
-        // TODO: Find a better way of evaluation to avoid cross LOD level patches
+        // TODO: Find a better way to calculate distance to get accurate result
         if (snappedPos.DistanceSquaredTo(viewPos) > Evaluation * Evaluation || depth <= 0)
         {
             patchCount++;
@@ -242,9 +240,15 @@ public partial class MonoTerrain : Node3D
                     _lodBiasDetectOffsetY[i] * patchSize);
                 for (var d = depth; d < TerrainData.Lods; d++)
                 {
-                    if (!IsDivided(pos, RenderCamera.Position, d) && d != TerrainData.Lods - 1) continue;
-                    bias[i] = d - depth;
-                    break;
+                    if (IsDivided(pos, RenderCamera.Position, d))
+                    {
+                        bias[i] = d - depth - 1;
+                        break;
+                    }
+                    if (d == TerrainData.Lods - 1)
+                    {
+                        bias[i] = d - depth;
+                    }
                 }
             }
             var lodBias = new Vector4I(bias[0], bias[1], bias[2], bias[3]);

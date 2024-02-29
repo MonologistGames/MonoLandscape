@@ -25,26 +25,42 @@ void vertex()
 	pos = VERTEX;
 	vec2 uv = VERTEX.xz - vec2(region_pos) * region_size;
 	COLOR = vec4(colors[lod],1);
+	//COLOR = vec4(0);
+	int scale = 1 << lod;
 	int vert_result = VERTEX_ID / grid_size;
 	int vert_modulo = modulo(VERTEX_ID, grid_size);
-	if (vert_result == 0 && lod_bias.w > 0) 
-	{
-		COLOR = vec4(1.0);
-		int offset = modulo(vert_modulo, lod_bias.w);
-		
+	if (vert_result == 0 && lod_bias.w > 0) {
+		int scale_factor = 1 << lod_bias.w;
+		int offset = modulo(vert_modulo, scale_factor);
+		uv.x -= float(offset * scale) * vert_gap;
+		//COLOR = vec4(float(offset) / 2.0);
 	}
-	if (vert_result == grid_size - 1 && lod_bias.y > 0) COLOR = vec4(1.0);
-	if (vert_modulo == 0 && lod_bias.x > 0) COLOR = vec4(1.0);
-	if (vert_modulo == grid_size - 1 && lod_bias.z > 0) COLOR = vec4(1.0);
+	if (vert_result == grid_size - 1 && lod_bias.y > 0){
+		int scale_factor = 1 << lod_bias.y;
+		int offset = modulo(vert_modulo, scale_factor);
+		uv.x -= float(offset * scale) * vert_gap;
+		//COLOR = vec4(float(offset) / float(scale_factor));
+	}
+	if (vert_modulo == 0 && lod_bias.x > 0){
+		int scale_factor = 1 << lod_bias.x;
+		int offset = modulo(vert_result, scale_factor);
+		uv.y -= float(offset * scale) * vert_gap;
+		//COLOR = vec4(float(offset) / 2.0);
+	}
+	if (vert_modulo == grid_size - 1 && lod_bias.z > 0){ 
+		int scale_factor = 1 << lod_bias.z;
+		int offset = modulo(vert_result, scale_factor);
+		uv.y -= float(offset * scale) * vert_gap;
+		//COLOR = vec4(float(offset) / 2.0);
+	}
+	
 	float h = texture(heightmap, uv/region_size).r;
 	VERTEX.y = h * max_height;
-	//VERTEX.xz = uv + vec2(region_pos) * region_size;
-	VERTEX.xz += vec2(region_pos) * 20.0;
+	VERTEX.xz = uv + vec2(region_pos) * region_size;
 }
 
 void fragment()
 {
 	float c = texture(heightmap, fract(pos.xz/(region_size))).r;
-	ALBEDO = colors[lod] * c / 2.0;
-	ALBEDO = COLOR.rgb;
+	ALBEDO = COLOR.rgb * c;
 }
