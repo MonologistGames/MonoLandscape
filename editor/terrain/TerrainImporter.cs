@@ -7,7 +7,7 @@ namespace MonoLandscape.Terrain.Editor;
 public partial class TerrainImporter : Button
 {
     public MonoTerrain? Terrain { get; set; }
-    
+
     private ConfirmationDialog _importWindow;
     private SpinBox _patchSize;
     private SpinBox _lods;
@@ -23,11 +23,11 @@ public partial class TerrainImporter : Button
         Icon = GD.Load<Texture2D>("res://addons/mono_landscape/icons/Terrain.svg");
         Pressed += () => _importWindow?.Popup();
 
-        _importWindow = GD.Load<PackedScene>("res://addons/mono_landscape/terrain/editor/terrain_importer.tscn")
+        _importWindow = GD.Load<PackedScene>("res://addons/mono_landscape/editor/terrain/terrain_importer.tscn")
             .Instantiate<ConfirmationDialog>();
         _importWindow.Visible = false;
         _importWindow.Confirmed += Import;
-        
+
         _patchSize = _importWindow.GetNode<SpinBox>("MarginContainer/VBoxContainer/PatchSizeField");
         _patchSize.ValueChanged += OnParamsChanged;
         _lods = _importWindow.GetNode<SpinBox>("MarginContainer/VBoxContainer/LodsField");
@@ -43,10 +43,10 @@ public partial class TerrainImporter : Button
         _importWindow.GetNode<Button>("MarginContainer/VBoxContainer/Dir/Button").Pressed += () => _dirDialog.Popup();
         _importWindow.GetNode<Button>("MarginContainer/VBoxContainer/Image/Button").Pressed +=
             () => _fileDialog.Popup();
-        
+
         AddChild(_importWindow);
     }
-    
+
     private void OnParamsChanged(double value)
     {
         _regionInfo.Text = $"Current Region Size: {_patchSize.Value * (1 << (int)_lods.Value - 1)}";
@@ -74,11 +74,11 @@ public partial class TerrainImporter : Button
         {
             for (var y = 0; y < tilesY; y++)
             {
-                terrainData.Regions.Add(new Vector2I(x,y));
-                terrainData.HeightRanges.Add(new Vector2(float.MaxValue,float.MinValue));   
+                terrainData.Regions.Add(new Vector2I(x, y));
+                terrainData.HeightRanges.Add(new Vector2(float.MaxValue, float.MinValue));
             }
         }
-        
+
         for (int i = 0; i < _lods.Value; i++)
         {
             var dir = DirAccess.Open(_terrainDataPath.Text);
@@ -96,9 +96,9 @@ public partial class TerrainImporter : Button
                 }
             }
         }
-        
+
         ResourceSaver.Singleton.Save(terrainData, _terrainDataPath.Text + "/terrain_data.tres");
-        
+
         GD.Print("Finished Importing Terrain Data and Tiles!");
     }
 
@@ -109,7 +109,7 @@ public partial class TerrainImporter : Button
         var pixelGap = 1 << lod;
         var sizeCurrentLod = regionSize >> lod;
         var img = Image.Create(sizeCurrentLod + 1, sizeCurrentLod + 1, false, Image.Format.Rf);
-        for (int i = 0; i < sizeCurrentLod + 1; i ++)
+        for (int i = 0; i < sizeCurrentLod + 1; i++)
         {
             for (int j = 0; j < sizeCurrentLod + 1; j++)
             {
