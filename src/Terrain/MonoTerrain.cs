@@ -33,16 +33,23 @@ public partial class MonoTerrain : Node3D
 
     private readonly int[] _patchOffsetX = [1, -1, -1, 1];
     private readonly int[] _patchOffsetY = [1, 1, -1, -1];
+    // Start at left, counter-clockwise
+    private readonly int[] _lodBiasDetectOffsetX = [-1, 0, 1, 0];
+    private readonly int[] _lodBiasDetectOffsetY = [0, 1, 0, -1];
 
     private bool _initialized;
 
     #region Rendering
 
     private World3D? _world;
+    
+    // Shader Uniform Names
     private StringName _heightmapParam = "heightmap";
     private StringName _regionSizeParam = "region_size";
     private StringName _regionPosParam = "region_pos";
     private StringName _maxHeightParam = "max_height";
+    private StringName _lodParam = "lod";
+    private StringName _lodBiasParam = "lod_bias";
 
     private ObjectPool<RegionMaterial>? _regionMaterialPool;
 
@@ -52,11 +59,10 @@ public partial class MonoTerrain : Node3D
     private Rid _patchMesh;
     private Aabb _patchAabb;
     private readonly List<Rid> _patchInstances = [];
-    private Image? _lodMap;
     [Export] public Camera3D? RenderCamera { get; set; }
 
     [Export]
-    public MonoTerrainData? TerrainData
+    public MonoTerrainStorage? TerrainData
     {
         get => _terrainData;
         set
@@ -68,7 +74,7 @@ public partial class MonoTerrain : Node3D
         }
     }
 
-    private MonoTerrainData? _terrainData;
+    private MonoTerrainStorage? _terrainData;
 
     [ExportGroup("Rendering")]
     [Export(PropertyHint.Range, "0,10,,")]
@@ -107,9 +113,11 @@ public partial class MonoTerrain : Node3D
 
     public override void _Ready()
     {
+        /*
         RenderCamera = Engine.IsEditorHint()
             ? EditorInterface.Singleton.GetEditorViewport3D().GetCamera3D()
             : GetViewport().GetCamera3D();
+            */
         _world = GetWorld3D();
     }
 
@@ -152,9 +160,6 @@ public partial class MonoTerrain : Node3D
                 return regionData;
             },
             regionData => { regionData.Lod = int.MaxValue; });
-
-        var tile = (1 << (TerrainData.Lods - 1)) * visibleRange;
-        _lodMap = Image.Create(tile, tile, false, Image.Format.R8);
     }
 
     private void ClearUp()
@@ -192,8 +197,7 @@ public partial class MonoTerrain : Node3D
             var maxDepth = TerrainData.Lods - 1;
             regionMaterial.Material.SetShaderParameter(_regionPosParam, region);
             BuildQuadtree(regionMaterial, TerrainData.HeightRanges[i], maxDepth, pos,
-                RenderCamera.Position,
-                _world.Scenario, ref patchCount, ref maxDepth);
+                RenderCamera.Position, ref patchCount, ref maxDepth);
 
             if (maxDepth >= regionMaterial.Lod) continue;
             regionMaterial.Lod = maxDepth;
@@ -204,36 +208,22 @@ public partial class MonoTerrain : Node3D
     }
 
     private void BuildQuadtree(in RegionMaterial region, in Vector2 range, int depth, in Vector3 position,
-        in Vector3 viewPoint, in Rid scenario,
+        in Vector3 viewPoint,
         ref int patchCount, ref int maxDepth)
     {
         if (TerrainData is null) return;
 
         var patchScale = 1 << depth;
-        var patchSize = 16 * patchScale * 0.5f;
+        var patchSize = TerrainData.PatchSize * patchScale * 0.5f;
         // TODO: Add delta movement and margin to avoid flickering and frequent map loading
-        var viewPos = (viewPoint / patchSize).Floor() * patchSize;
-        viewPos.X += patchSize * 0.5f;
-        viewPos.Z += patchSize * 0.5f;
-        var distance = viewPos.DistanceTo(position);
+        var viewPos = (viewPoint / patchSize).Floor();
+        var snappedPos = (position / patchSize).Floor();
 
         // TODO: Find a better way of evaluation to avoid cross LOD level patches
-        if (distance / patchSize > Evaluation || depth <= 0)
+        if (snappedPos.DistanceSquaredTo(viewPos) > Evaluation * Evaluation || depth <= 0)
         {
             patchCount++;
-            Rid patch;
-            if (patchCount <= _patchInstances.Count)
-            {
-                patch = _patchInstances[patchCount - 1];
-                RS.Singleton.InstanceGeometrySetCastShadowsSetting(patch, RenderingServer.ShadowCastingSetting.On);
-                RS.Singleton.InstanceSetVisible(patch, true);
-            }
-            else
-            {
-                patch = RS.Singleton.InstanceCreate2(_patchMesh, scenario);
-                RS.Singleton.InstanceSetLayerMask(patch, RenderLayers);
-                _patchInstances.Add(patch);
-            }
+            var patch = GetPatch(patchCount);
 
             var aabb = _patchAabb;
             aabb.Position = new Vector3(-patchSize * 0.5f, range.X * TerrainData.HeightScale, -patchSize * 0.5f);
@@ -243,21 +233,25 @@ public partial class MonoTerrain : Node3D
             transform.Origin = position;
             RS.Singleton.InstanceSetTransform(patch, transform);
             RS.Singleton.InstanceGeometrySetMaterialOverride(patch, region.Material.GetRid());
-            RS.Singleton.InstanceGeometrySetShaderParameter(patch, "lod", depth);
+            RS.Singleton.InstanceGeometrySetShaderParameter(patch, _lodParam, depth);
+            
+            int[] bias = [0,0,0,0];
+            for (var i = 0; i < 4; i++)
+            {
+                var pos = position + new Vector3(_lodBiasDetectOffsetX[i] * patchSize, 0,
+                    _lodBiasDetectOffsetY[i] * patchSize);
+                for (var d = depth; d < TerrainData.Lods; d++)
+                {
+                    if (!IsDivided(pos, RenderCamera.Position, d) && d != TerrainData.Lods - 1) continue;
+                    bias[i] = d - depth;
+                    break;
+                }
+            }
+            var lodBias = new Vector4I(bias[0], bias[1], bias[2], bias[3]);
+            RS.Singleton.InstanceGeometrySetShaderParameter(patch, _lodBiasParam, lodBias);
 
             if (maxDepth > depth)
                 maxDepth = depth;
-            
-            var tile = Mathf.FloorToInt(patchSize / TerrainData.PatchSize * 0.5f);
-            
-            for (var x = 0; x < tile; x++)
-            {
-                for (var y = 0; y < tile; y++)
-                {
-                    _lodMap!.SetPixel(x + (int) position.X / TerrainData.PatchSize, y + (int) position.Z / TerrainData.PatchSize,
-                        Color.Color8((byte)depth,0, 0, 0));
-                }
-            }
             return;
         }
 
@@ -266,7 +260,36 @@ public partial class MonoTerrain : Node3D
         {
             var pos = new Vector3(position.X + _patchOffsetX[i] * patchSize, 0,
                 position.Z + _patchOffsetY[i] * patchSize);
-            BuildQuadtree(region, range, depth - 1, pos, viewPoint, scenario, ref patchCount, ref maxDepth);
+            BuildQuadtree(region, range, depth - 1, pos, viewPoint, ref patchCount, ref maxDepth);
         }
     }
+
+    private bool IsDivided(Vector3 pos, Vector3 viewPos, int lod)
+    {
+        var currentSize = TerrainData!.PatchSize * (1 << lod) * 0.5f; 
+        viewPos = (viewPos / currentSize).Floor();
+        pos = (pos / currentSize).Floor();
+
+        return pos.DistanceSquaredTo(viewPos) <= Evaluation * Evaluation;
+    }
+
+    private Rid GetPatch(int patchCount)
+    {
+        Rid patch;
+        if (patchCount <= _patchInstances.Count)
+        {
+            patch = _patchInstances[patchCount - 1];
+            RS.Singleton.InstanceGeometrySetCastShadowsSetting(patch, RenderingServer.ShadowCastingSetting.On);
+            RS.Singleton.InstanceSetVisible(patch, true);
+        }
+        else
+        {
+            patch = RS.Singleton.InstanceCreate2(_patchMesh, _world!.Scenario);
+            RS.Singleton.InstanceSetLayerMask(patch, RenderLayers);
+            _patchInstances.Add(patch);
+        }
+
+        return patch;
+    }
+    
 }

@@ -6,7 +6,7 @@ namespace MonoLandscape.Terrain;
 [Tool]
 [GlobalClass]
 [Icon("res://addons/mono_landscape/icons/TerrainData.svg")]
-public partial class MonoTerrainData : Resource
+public partial class MonoTerrainStorage : Resource
 {
     [Export(PropertyHint.Dir)] public string MapDirectory { get; set; }
     [Export] public int PatchSize { get; set; } = 16;

@@ -1,11 +1,15 @@
 [gd_scene load_steps=3 format=3 uid="uid://7rxpvxp5igt5"]
 
-[ext_resource type="Script" path="res://addons/mono_landscape/terrain/MonoTerrain.cs" id="1_lie1i"]
-[ext_resource type="Resource" uid="uid://d23gggmmlpimk" path="res://addons/mono_landscape/test/terrain_data/terrain_data.tres" id="2_gactk"]
+[ext_resource type="Script" path="res://addons/mono_landscape/src/Terrain/MonoTerrain.cs" id="1_2eyo1"]
+[ext_resource type="Resource" uid="uid://cdv01nisy4gix" path="res://addons/mono_landscape/test/terrain_data/terrain_data.tres" id="2_o8p4y"]
 
 [node name="Node3D" type="Node3D"]
 
 [node name="MonoTerrain" type="Node3D" parent="." node_paths=PackedStringArray("RenderCamera")]
-script = ExtResource("1_lie1i")
-RenderCamera = NodePath("../../../../../../../../../@Node3DEditor@10012/@HSplitContainer@9522/@HSplitContainer@9524/@VSplitContainer@9526/@Node3DEditorViewportContainer@9527/@Node3DEditorViewport@9566/@SubViewportContainer@9528/@SubViewport@9529/@Camera3D@9531")
-TerrainData = ExtResource("2_gactk")
+transform = Transform3D(0.999363, 0.000129979, 0.0356852, -0.000129754, 1, -8.60452e-06, -0.0356852, 3.96884e-06, 0.999363, 0, 0, 0)
+script = ExtResource("1_2eyo1")
+RenderCamera = NodePath("../Camera3D")
+TerrainData = ExtResource("2_o8p4y")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27.78, 0, 27.813)

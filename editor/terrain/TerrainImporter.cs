@@ -60,7 +60,7 @@ public partial class TerrainImporter : Button
             return;
         }
 
-        var terrainData = new MonoTerrainData
+        var terrainData = new MonoTerrainStorage
         {
             PatchSize = (int)_patchSize.Value,
             Lods = (int)_lods.Value,
