@@ -1,0 +1,14 @@
+[remap]
+
+importer="image"
+type="Image"
+uid="uid://dikk2moadnrr6"
+path="res://.godot/imported/heightmap.png-35d92cf1020c0af70c3f07290a7b7c38.image"
+
+[deps]
+
+source_file="res://addons/mono_landscape/test/heightmap.png"
+dest_files=["res://.godot/imported/heightmap.png-35d92cf1020c0af70c3f07290a7b7c38.image"]
+
+[params]
+

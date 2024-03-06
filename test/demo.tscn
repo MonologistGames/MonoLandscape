@@ -1,9 +1,16 @@
-[gd_scene load_steps=3 format=3 uid="uid://7rxpvxp5igt5"]
+[gd_scene load_steps=4 format=3 uid="uid://7rxpvxp5igt5"]
 
 [ext_resource type="Script" path="res://addons/mono_landscape/src/Terrain/MonoTerrain.cs" id="1_2eyo1"]
 [ext_resource type="Resource" uid="uid://dbxl4k3lu5dxs" path="res://addons/mono_landscape/test/test_storage/terrain_data.tres" id="2_mi21s"]
 
+[sub_resource type="BoxMesh" id="BoxMesh_g3h06"]
+
 [node name="Node3D" type="Node3D"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.998797, 0.0113671, -0.0476949, -0.0372079, 0.45778, 0.888286, 0.031931, 0.888993, -0.456807, 228.421, 248.608, 171.754)
+light_energy = 2.067
+shadow_enabled = true
 
 [node name="MonoTerrain" type="Node3D" parent="." node_paths=PackedStringArray("RenderCamera")]
 script = ExtResource("1_2eyo1")
@@ -11,4 +18,9 @@ RenderCamera = NodePath("../Camera3D")
 TerrainData = ExtResource("2_mi21s")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 553.373, 3.05176e-05, 658.873)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1147.81, 0, 411.59)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(100, 0, 0, 0, 500, 0, 0, 0, 100, 361.745, 203.879, 433.773)
+visible = false
+mesh = SubResource("BoxMesh_g3h06")

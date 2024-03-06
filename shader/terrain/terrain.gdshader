@@ -62,5 +62,6 @@ void vertex()
 void fragment()
 {
 	float c = texture(heightmap, fract(pos.xz/(region_size))).r;
-	ALBEDO = COLOR.rgb * c;
+	ALBEDO = COLOR.rgb;
+	ROUGHNESS = 1.0;
 }
